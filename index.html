@@ -31,6 +31,8 @@
         const ctx = canvas.getContext("2d");
 
         let score = 0;
+        let message = "";
+        let messageTimer = 0;
 
         const player = {
             x: 200,
@@ -59,7 +61,7 @@
         };
 
         const goal = {
-            x: 780,
+            x: canvas.width - 20,
             y: 175,
             width: 20,
             height: 150
@@ -75,9 +77,14 @@
             keys[e.key] = false;
         });
 
+        function showMessage(text) {
+            message = text;
+            messageTimer = 1.2;
+        }
+
         function resetBall() {
-            ball.x = 400;
-            ball.y = 250;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
             ball.vx = 0;
             ball.vy = 0;
             player.x = 200;
@@ -150,9 +157,12 @@
             const inGoalOpening = ball.y >= goal.y && ball.y <= goal.y + goal.height;
             if (ball.x + ball.radius >= goal.x && inGoalOpening) {
                 score++;
-                alert("GOAL!");
+                showMessage("GOAL!");
                 resetBall();
-            } else if (ball.x + ball.radius > canvas.width) {
+                return;
+            }
+
+            if (ball.x + ball.radius > canvas.width) {
                 ball.x = canvas.width - ball.radius;
                 ball.vx *= -0.9;
             }
@@ -164,6 +174,10 @@
             kickBallFrom(player);
             kickBallFrom(enemy);
             updateBall();
+
+            if (messageTimer > 0) {
+                messageTimer -= 1 / 60;
+            }
         }
 
         function drawPitch() {
@@ -200,6 +214,13 @@
             ctx.fillStyle = "white";
             ctx.font = "20px Arial";
             ctx.fillText("Score: " + score, 20, 40);
+
+            if (messageTimer > 0) {
+                ctx.fillStyle = "rgba(255,255,255,0.95)";
+                ctx.font = "bold 28px Arial";
+                const textWidth = ctx.measureText(message).width;
+                ctx.fillText(message, canvas.width / 2 - textWidth / 2, 70);
+            }
         }
 
         function loop() {
