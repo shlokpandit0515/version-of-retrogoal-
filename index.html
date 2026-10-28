@@ -15,172 +15,200 @@
             color: white;
             font-family: Arial, sans-serif;
         }
+
         canvas {
             border: 4px solid #fff;
-            background: #2e7d32; /* Pitch Green */
+            background: #2e7d32;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
 <body>
-
     <canvas id="gameCanvas" width="800" height="500"></canvas>
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-// Game Variables
-let score = 0;
+        let score = 0;
 
-// Player (Striker)
-const player = {
-    x: 200,
-    y: 250,
-    radius: 15,
-    speed: 4,
-    color: "#0d47a1" // Blue
-};
+        const player = {
+            x: 200,
+            y: 250,
+            radius: 15,
+            speed: 4,
+            color: "#0d47a1"
+        };
 
-// Enemy (Defender AI)
-const enemy = {
-    x: 600,
-    y: 250,
-    radius: 15,
-    speed: 2,
-    color: "#b71c1c" // Red
-};
+        const enemy = {
+            x: 600,
+            y: 250,
+            radius: 15,
+            speed: 2.2,
+            color: "#b71c1c"
+        };
 
-// Ball
-const ball = {
-    x: 400,
-    y: 250,
-    radius: 10,
-    vx: 0,
-    vy: 0,
-    friction: 0.98,
-    color: "#fff"
-};
+        const ball = {
+            x: 400,
+            y: 250,
+            radius: 10,
+            vx: 0,
+            vy: 0,
+            friction: 0.985,
+            color: "#fff"
+        };
 
-// Goal Post (Right side)
-const goal = {
-    x: 780,
-    y: 175,
-    width: 20,
-    height: 150
-};
+        const goal = {
+            x: 780,
+            y: 175,
+            width: 20,
+            height: 150
+        };
 
-// Keyboard Input Tracking
-const keys = {};
-window.addEventListener("keydown", e => keys[e.key] = true);
-window.addEventListener("keyup", e => keys[e.key] = false);
+        const keys = {};
 
-// Distance Helper
-function getDistance(x1, y1, x2, y2) {
-    return Math.hypot(x2 - x1, y2 - y1);
-}
+        window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+        });
 
-// Reset Ball after Goal
-function resetBall() {
-    ball.x = 400;
-    ball.y = 250;
-    ball.vx = 0;
-    ball.vy = 0;
-    player.x = 200;
-    player.y = 250;
-}
+        window.addEventListener("keyup", (e) => {
+            keys[e.key] = false;
+        });
 
-// Game Loop
-function update() {
-    // 1. Player Movement Controls
-    if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
-    if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
-    if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
-    if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+        function resetBall() {
+            ball.x = 400;
+            ball.y = 250;
+            ball.vx = 0;
+            ball.vy = 0;
+            player.x = 200;
+            player.y = 250;
+            enemy.x = 600;
+            enemy.y = 250;
+        }
 
-    // Constrain player to screen boundaries
-    player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-    player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+        function keepInside(entity) {
+            entity.x = Math.max(entity.radius, Math.min(canvas.width - entity.radius, entity.x));
+            entity.y = Math.max(entity.radius, Math.min(canvas.height - entity.radius, entity.y));
+        }
 
-    // 2. AI Defender Movement (Chases the ball)
-    if (enemy.y < ball.y) enemy.y += enemy.speed;
-    if (enemy.y > ball.y) enemy.y -= enemy.speed;
-    if (enemy.x < ball.x) enemy.x += enemy.speed;
-    if (enemy.x > ball.x) enemy.x -= enemy.speed;
+        function movePlayer() {
+            if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+            if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+            if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+            if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
 
-    // 3. Ball Physics & Friction
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-    ball.vx *= ball.friction;
-    ball.vy *= ball.friction;
+            keepInside(player);
+        }
 
-    // Bounce ball off top/bottom walls
-    if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
-        ball.vy = -ball.vy;
-    }
-    // Bounce ball off left wall
-    if (ball.x - ball.radius  {
-        let dist = getDistance(entity.x, entity.y, ball.x, ball.y);
-        if (dist = goal.x && ball.y >= goal.y && ball.y <= goal.y + goal.height) {
-        score++;
-        alert("GOAL!");
-        resetBall();
-    } else if (ball.x + ball.radius > canvas.width) {
-        // Bounce off right wall if it misses the net
-        ball.vx = -ball.vx;
-    }
-}
+        function moveEnemy() {
+            const dx = ball.x - enemy.x;
+            const dy = ball.y - enemy.y;
+            const distance = Math.hypot(dx, dy);
 
-function draw() {
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (distance > 0) {
+                enemy.x += (dx / distance) * enemy.speed;
+                enemy.y += (dy / distance) * enemy.speed;
+            }
 
-    // Draw Pitch Lines (Center Line & Circle)
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 0);
-    ctx.lineTo(canvas.width / 2, canvas.height);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
-    ctx.stroke();
+            keepInside(enemy);
+        }
 
-    // Draw Goal Net
-    ctx.fillStyle = "white";
-    ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+        function kickBallFrom(entity) {
+            const dx = ball.x - entity.x;
+            const dy = ball.y - entity.y;
+            const distance = Math.hypot(dx, dy);
+            const minDistance = entity.radius + ball.radius + 2;
 
-    // Draw Player
-    ctx.fillStyle = player.color;
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-    ctx.fill();
+            if (distance < minDistance) {
+                const angle = Math.atan2(dy, dx);
+                const force = 6;
+                ball.vx = Math.cos(angle) * force;
+                ball.vy = Math.sin(angle) * force;
+            }
+        }
 
-    // Draw Enemy
-    ctx.fillStyle = enemy.color;
-    ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-    ctx.fill();
+        function updateBall() {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
 
-    // Draw Ball
-    ctx.fillStyle = ball.color;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fill();
+            ball.vx *= ball.friction;
+            ball.vy *= ball.friction;
 
-    // Draw UI Score
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.fillText("Score: " + score, 20, 40);
-}
+            if (Math.abs(ball.vx) < 0.02) ball.vx = 0;
+            if (Math.abs(ball.vy) < 0.02) ball.vy = 0;
 
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
+                ball.vy *= -1;
+            }
 
-// Start Game
-loop();
-</script>
+            if (ball.x - ball.radius < 0) {
+                ball.x = ball.radius;
+                ball.vx *= -0.9;
+            }
+
+            const inGoalOpening = ball.y >= goal.y && ball.y <= goal.y + goal.height;
+            if (ball.x + ball.radius >= goal.x && inGoalOpening) {
+                score++;
+                alert("GOAL!");
+                resetBall();
+            } else if (ball.x + ball.radius > canvas.width) {
+                ball.x = canvas.width - ball.radius;
+                ball.vx *= -0.9;
+            }
+        }
+
+        function update() {
+            movePlayer();
+            moveEnemy();
+            kickBallFrom(player);
+            kickBallFrom(enemy);
+            updateBall();
+        }
+
+        function drawPitch() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+        }
+
+        function drawEntity(entity, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function draw() {
+            drawPitch();
+            drawEntity(player, player.color);
+            drawEntity(enemy, enemy.color);
+            drawEntity(ball, ball.color);
+
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 20, 40);
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
 </body>
 </html>
