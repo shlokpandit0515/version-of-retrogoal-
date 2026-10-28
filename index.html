@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Retro Soccer Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 4px solid #fff;
+            background: #2e7d32; /* Pitch Green */
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Game Variables
+let score = 0;
+
+// Player (Striker)
+const player = {
+    x: 200,
+    y: 250,
+    radius: 15,
+    speed: 4,
+    color: "#0d47a1" // Blue
+};
+
+// Enemy (Defender AI)
+const enemy = {
+    x: 600,
+    y: 250,
+    radius: 15,
+    speed: 2,
+    color: "#b71c1c" // Red
+};
+
+// Ball
+const ball = {
+    x: 400,
+    y: 250,
+    radius: 10,
+    vx: 0,
+    vy: 0,
+    friction: 0.98,
+    color: "#fff"
+};
+
+// Goal Post (Right side)
+const goal = {
+    x: 780,
+    y: 175,
+    width: 20,
+    height: 150
+};
+
+// Keyboard Input Tracking
+const keys = {};
+window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keyup", e => keys[e.key] = false);
+
+// Distance Helper
+function getDistance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+}
+
+// Reset Ball after Goal
+function resetBall() {
+    ball.x = 400;
+    ball.y = 250;
+    ball.vx = 0;
+    ball.vy = 0;
+    player.x = 200;
+    player.y = 250;
+}
+
+// Game Loop
+function update() {
+    // 1. Player Movement Controls
+    if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+    if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+    if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+    if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+
+    // Constrain player to screen boundaries
+    player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+    player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+    // 2. AI Defender Movement (Chases the ball)
+    if (enemy.y < ball.y) enemy.y += enemy.speed;
+    if (enemy.y > ball.y) enemy.y -= enemy.speed;
+    if (enemy.x < ball.x) enemy.x += enemy.speed;
+    if (enemy.x > ball.x) enemy.x -= enemy.speed;
+
+    // 3. Ball Physics & Friction
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+    ball.vx *= ball.friction;
+    ball.vy *= ball.friction;
+
+    // Bounce ball off top/bottom walls
+    if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+        ball.vy = -ball.vy;
+    }
+    // Bounce ball off left wall
+    if (ball.x - ball.radius  {
+        let dist = getDistance(entity.x, entity.y, ball.x, ball.y);
+        if (dist = goal.x && ball.y >= goal.y && ball.y <= goal.y + goal.height) {
+        score++;
+        alert("GOAL!");
+        resetBall();
+    } else if (ball.x + ball.radius > canvas.width) {
+        // Bounce off right wall if it misses the net
+        ball.vx = -ball.vx;
+    }
+}
+
+function draw() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Pitch Lines (Center Line & Circle)
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw Goal Net
+    ctx.fillStyle = "white";
+    ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+    // Draw Player
+    ctx.fillStyle = player.color;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Enemy
+    ctx.fillStyle = enemy.color;
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Ball
+    ctx.fillStyle = ball.color;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw UI Score
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 20, 40);
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// Start Game
+loop();
+</script>
+</body>
+</html>
